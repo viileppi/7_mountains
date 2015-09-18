@@ -15,7 +15,7 @@ class Kansalainen():
         self.ika = 0
         self.varallisuus = 0
         self.onnellisuus = 7
-        self.nimi = ""
+        #self.nimi = ""
         if self.resurssit["shelter"] < 1:
             self.elossa = False
         else:
@@ -108,7 +108,7 @@ class Pelaaja:
     def __init__(self, resurssit, kansalaiset, ammatit):
         self.resurssit = resurssit
         self.kansalaiset = kansalaiset
-        self.syntyma = 10
+        self.syntyma = 20
         self.ammatit = ammatit
         self.ammattinimet = []
         for ammatti in self.ammatit:
