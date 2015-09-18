@@ -38,8 +38,9 @@ class Follower():
             return "kid"
     def rotostele(self):
         for rotos in p.crimes:
-            if random.randint(0, int(self.happiness)) >= int(self.happiness):
+            if random.randint(0, int(self.happiness) * 10) == 0:
                 p.crimes[rotos] += 1
+        self.happiness -= sum(p.crimes.values()) / 4
             
 class Farmari(Follower):
     # produces food
@@ -118,6 +119,7 @@ class Pelaaja:
         self.crimes = {"theft" : 0, "arsony" : 0, "rape" : 0, "murder" : 0, "con" : 0}
         self.informations_index = 0
         self.informations = ["No information. Try training some scouts or pass few turns", "Scouts report: There are angry wildlings in nearby woods. You can start war against them by typing 'war'.", "Scouts report: There is an abandoned mine nearby. You can raid it by typing 'raid' (feature not available yet)"]
+        self.punishments = ["jail", "hang", "behead", "scald", "pardon"]
 
     def bornAndDie(self):
         kuolema = []
@@ -268,11 +270,29 @@ class CmdShell(cmd.Cmd):
             self.last_action = "Scouts have not yet provided any information."
     def help_scout(self):
         print("Show information provided by the scouts.")
-    def do_justice(self, s):
-        i = input("What do we do with these criminals? (jail/hang/scald) ")
-        for crime in p.crimes:
-            p.crimes[crime] = 0
-        last_action = i + "ed the criminals"
+    def do_punish(self, s):
+        s = s.split(" ")
+        try:
+            if s[0] == "":
+                last_action = "Try 'punish [punishment]'."
+                print("nope")
+                time.sleep(1)
+            else:
+                for crime in p.crimes:
+                    p.crimes[crime] = 0
+                last_action = s[0] + "ed the criminals"
+                for follower in p.followers:
+                    followers[follower].happiness += 1
+                print(s[0] + "ing!")
+                time.sleep(1)
+        except IndexError:
+            last_action = "Try 'punish [punishment]'."
+    def complete_punish(self, text, line, begidx, endidx):
+        if not text:
+            c = p.punishments
+        else:
+            c = [i for i in p.punishments if i.startswith(text)]
+        return c
     def do_stats(self, l):
         print("A young kingdom of", p.citadel)
         print(resources, p.taxincome, "tax income")
@@ -295,7 +315,7 @@ class CmdShell(cmd.Cmd):
             for item in p.crimes:
                 if p.crimes[item] != 0:
                     print("There were", p.crimes[item], item+ "s")
-            print("Type justice to punish the perps.")
+            print("Type punish to punish the perps.")
     def help_stats(self):
         print("Print out the statistics.")
     def do_war(self, l):
