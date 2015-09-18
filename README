@@ -3,7 +3,7 @@ Resource management text game
 
 RUNNING
 
-To run type 'python3 7_mountains.py' or 'python3 7_mountais skip' to skip the intro.
+To run type 'python3 7_mountains.py' or 'python3 7_mountains.py skip' to skip the intro.
 
 Does not work correctly on Python IDLE on Windows, use command line.
 
