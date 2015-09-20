@@ -1,35 +1,36 @@
-7 mountains
+# 7 mountains
 Resource management text game
 
-RUNNING
+# RUNNING
 
 To run type 'python3 7_mountains.py' or 'python3 7_mountains.py skip' to skip the intro.
 
 Does not work correctly on Python IDLE on Windows, use command line.
 
-COMMANDS
+# COMMANDS
 
 entertain = will arrange entertainment to followers, will cost 2 monies
 
-
-help = display in-game help eg. "help help" will display help for help-command
-
 pass = pass the turn, do this at end of each turn. TIP: you can just push <enter> to pass
-
-stats = display statistics
-
-tax = change tax rate
-
-tutorial = launch in-game tutorial
-
-exit = exit the game
-
-justice = when citizens do criminal actions you can punish the evildoers with this command
 
 scout = display information provided by the scouts
 
-story = display the story from the intro
+tax = change tax rate
+
+war = start a war
+
+exit = exit the game
+
+pray = pray for god(s) for good luck
+
+stats = display statistics
 
 train = train followers eg. "train farmer 25" will train 25% of your new followers to be farmers
 
-war = start a war
+help = display in-game help eg. "help help" will display help for help-command
+
+punish = when citizens do criminal actions you can punish the evildoers with this command
+
+story = display the story from the intro
+
+tutorial = launch in-game tutorial
