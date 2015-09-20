@@ -16,6 +16,7 @@ class Follower():
         self.age = 0
         self.posessions = 0
         self.happiness = 7
+        self.crime = ""
         #self.name = ""
         if self.resources["shelter"] < 1:
             self.alive = False
@@ -39,8 +40,9 @@ class Follower():
             return "kid"
     def rotostele(self):
         for rotos in p.crimes:
-            if random.randint(0, int(self.happiness) * 10) == 0:
+            if random.randint(0, int(self.happiness) * 30) == 0:
                 p.crimes[rotos] += 1
+                self.crime = rotos
         self.happiness -= sum(p.crimes.values()) / 4
             
 class Farmari(Follower):
@@ -135,7 +137,6 @@ class Pelaaja:
         for vainaa in kuolema:
             del self.followers[vainaa]
     def collect_tax(self):
-        self.taxincome = 0
         for hahmo in self.followers:
             if self.followers[hahmo].posessions - p.tax > 0:
                 self.followers[hahmo].posessions -= p.tax
@@ -148,7 +149,7 @@ resources = {"food" : 10, "shelter" : 10, "brick" : 10}
 followers = {}
 score = 0
 professions = [Farmari, Builder, Merchant, Soldier, Scout]
-beginwith = 40
+beginwith = 100
 p = Pelaaja(resources, followers, professions)
 for resurssi in resources:
     resources[resurssi] = beginwith
@@ -164,7 +165,7 @@ class CmdShell(cmd.Cmd):
     training_percent = {}
     tutorial_index = 0
     tutorial = False
-    tutorial_list = [None, None, "First let's hit <tab> key twice. This will bring out the list of available commands. Then, type 'pr' and hit <tab> to autocomplete 'pray'.", "Using the autocomplete method punch in a sentence 'train farmer 25' and hit <enter> -this will set the amount of farmers to be trained to 25%.", "As you can see, the game automatically compensates the training rate for rest of the professions. Good, now the training is set. Let's change the tax rate by typing 'tax'.", "Type 'help' for in-game help or 'help <command> to view help for a certain command (don't forget the tab-autocomplete!). Now type 'pass' to finish the turn"]
+    tutorial_list = [None, None, "First let's hit <tab> key twice. This will bring out the list of available commands. Then, type 'pr' and hit <tab> to autocomplete 'pray'.", "Using the autocomplete method punch in 'tr<tab> fa<tab> 25' to complete a sentence 'train farmer 25' and hit <enter> -this will set the amount of farmers to be trained to 25%.", "As you can see, the game automatically compensates the training rate for rest of the professions. Good, now the training is set. Let's change the tax rate by typing 'tax'.", "Type 'help' for in-game help or 'help <command> to view help for a certain command (don't forget the tab-autocomplete!). Now type 'pass' to finish the turn"]
     last_action = ""
     informations_index = 0
     color_reset='\033[0m'
@@ -185,22 +186,22 @@ class CmdShell(cmd.Cmd):
         s = ""
         for resource in p.resources:
             s += resource + ": "
-            if p.resources[resource] < 30:
+            if p.resources[resource] <= 30:
                 s += self.color_red + str(p.resources[resource]) + self.color_reset + " "
-            if p.resources[resource] > 75:
+            if p.resources[resource] >= 75:
                 s += self.color_green + str(p.resources[resource]) + self.color_reset + " "
-            else:
+            if p.resources[resource] > 30 and p.resources[resource] < 75:
                 s += self.color_yellow + str(p.resources[resource]) + self.color_reset + " "
         return s
     def postcmd(self, stop, line):
         if self.tutorial == True:
             self.tutorial_index += 1
-        if p.informations_index > self.informations_index:
+        if p.informations_index >= self.informations_index:
             last_action = "Scouts have provided new information. Type 'scout' to view information."
         for profession in professions:
             for i in range(int(self.training_percent[profession.name] / 100 * p.birthrate)):
                 p.followers[len(p.followers) + 1] = profession(resources, followers)
-                p.birthrate -= 1
+#                p.birthrate -= 1
         if line[0:4] != "help" and line[0:5] != "story":
             clearScreen()
             self.do_stats("foo")
@@ -289,10 +290,11 @@ class CmdShell(cmd.Cmd):
         print("Show information provided by the scouts.")
     def do_punish(self, s):
         s = s.split(" ")
+        kill_list = []
         try:
             if s[0] == "":
                 self.last_action = "Try 'punish [punishment]'."
-                print("nope")
+                print("No such punishment")
                 time.sleep(1)
             else:
                 for crime in p.crimes:
@@ -300,6 +302,10 @@ class CmdShell(cmd.Cmd):
                 self.last_action = s[0] + "ed the criminals"
                 for follower in p.followers:
                     followers[follower].happiness += 1
+                    if followers[follower].crime != "":
+                        kill_list.append(follower)
+                for perp in kill_list:
+                    del followers[perp]
                 print(s[0] + "ing!")
                 time.sleep(1)
                 if s[0] == "pardon":
@@ -320,10 +326,26 @@ class CmdShell(cmd.Cmd):
         if p.karma > 1:
             for follower in followers:
                 followers[follower].happiness += p.karma / 10
+            self.last_action = "You feel presence of something greater than yourself"
         else:
             self.last_action = "Your god(s) seem unhappy to your actions."
+            p.karma += 0.2
     def help_pray(self):
         print("Pray your god(s) for help.")
+    def do_sell(self, s):
+        # sell resources for money
+        s = s.split()
+        try:
+            p.resources[s[0]] -= int(s[1])
+            p.taxincome += int(s[1])
+        except IndexError:
+            self.last_action = "Error: use 'sell [resource] [amount]'"
+    def complete_sell(self, text, line, begidx, endidx):
+        if not text:
+            c = [i for i in p.resources]
+        else:
+            c = [i for i in p.resources if i.startswith(text)]
+        return c
     def do_stats(self, l):
         print("A young kingdom of", p.citadel)
         print(self.resources(), p.taxincome, "tax income")
@@ -346,7 +368,7 @@ class CmdShell(cmd.Cmd):
             for item in p.crimes:
                 if p.crimes[item] != 0:
                     print("There were", p.crimes[item], item+ "s")
-            print("Type punish to punish the perps.")
+            print("Type 'punish ' and hit tab twice to find a punishment for the perps.")
     def help_stats(self):
         print("Print out the statistics.")
     def do_war(self, l):
@@ -376,6 +398,17 @@ class CmdShell(cmd.Cmd):
         clearScreen()
         p.taxincome = p.collect_tax()
         p.bornAndDie()
+        if self.firstrun != True:
+            happiness = 0
+            for hahmo in followers:
+                happiness += followers[hahmo].happiness
+            try:
+                happiness = happiness / len(followers)
+            except ZeroDivisionError:
+                self.last_action = "All citizens died! Game over!"
+            if happiness < 1:
+                self.last_action = "You are overthrown as a king. Game over!"
+                return True
         print(len(followers), "followers", resources, "tax income", p.taxincome)
         print(p.birthrate, "new followers were born.")
         for profession in professions:
@@ -387,7 +420,7 @@ class CmdShell(cmd.Cmd):
 #        self.last_action = "Passed."
         if len(followers) < 1 and self.firstrun == False:
             self.last_action = "All the followers died. Game over!"
-
+            return True
     def help_pass(self):
         print("Finish the turn. You can also press <enter> to pass.")
     def do_exit(self, s):
