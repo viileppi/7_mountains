@@ -167,6 +167,12 @@ class CmdShell(cmd.Cmd):
     tutorial_list = [None, None, "First let's hit <tab> key twice. This will bring out the list of available commands. Then, type 'pr' and hit <tab> to autocomplete 'pray'.", "Using the autocomplete method punch in a sentence 'train farmer 25' and hit <enter> -this will set the amount of farmers to be trained to 25%.", "As you can see, the game automatically compensates the training rate for rest of the professions. Good, now the training is set. Let's change the tax rate by typing 'tax'.", "Type 'help' for in-game help or 'help <command> to view help for a certain command (don't forget the tab-autocomplete!). Now type 'pass' to finish the turn"]
     last_action = ""
     informations_index = 0
+    color_reset='\033[0m'
+    color_red=red='\033[31m'
+    color_green='\033[32m'
+    color_yellow='\033[93m'
+    color_cyan='\033[36m'
+    color_bold='\033[01m'
 
     for profession in p.professions:
         training_percent[profession.name] = 20
@@ -175,6 +181,17 @@ class CmdShell(cmd.Cmd):
         self.do_stats("foo")
     def emptyline(self):
         self.do_pass("foo")
+    def resources(self):
+        s = ""
+        for resource in p.resources:
+            s += resource + ": "
+            if p.resources[resource] < 30:
+                s += self.color_red + str(p.resources[resource]) + self.color_reset + " "
+            if p.resources[resource] > 75:
+                s += self.color_green + str(p.resources[resource]) + self.color_reset + " "
+            else:
+                s += self.color_yellow + str(p.resources[resource]) + self.color_reset + " "
+        return s
     def postcmd(self, stop, line):
         if self.tutorial == True:
             self.tutorial_index += 1
@@ -189,7 +206,7 @@ class CmdShell(cmd.Cmd):
             self.do_stats("foo")
             print(self.last_action)
             if self.tutorial_index != 0:
-                print(self.tutorial_list[self.tutorial_index])
+                print(self.color_cyan, "Tutorial:", self.tutorial_list[self.tutorial_index], self.color_reset)
             if self.tutorial_index >= len(self.tutorial_list) -1:
                 self.tutorial_index = 0
                 self.tutorial = False
@@ -218,7 +235,7 @@ class CmdShell(cmd.Cmd):
                 if s[0] == profession and len(s) == 1:
                     self.training_percent[profession] = int(input("Give percentage: "))
             except IndexError:
-                last_action = "Needs more parameters eg. 'train builder 25'"
+                self.last_action = "Needs more parameters eg. 'train builder 25'"
             if s[0] == "equal":
                 for profession in p.profession_names:
                     self.training_percent[profession] = 20
@@ -274,13 +291,13 @@ class CmdShell(cmd.Cmd):
         s = s.split(" ")
         try:
             if s[0] == "":
-                last_action = "Try 'punish [punishment]'."
+                self.last_action = "Try 'punish [punishment]'."
                 print("nope")
                 time.sleep(1)
             else:
                 for crime in p.crimes:
                     p.crimes[crime] = 0
-                last_action = s[0] + "ed the criminals"
+                self.last_action = s[0] + "ed the criminals"
                 for follower in p.followers:
                     followers[follower].happiness += 1
                 print(s[0] + "ing!")
@@ -292,7 +309,7 @@ class CmdShell(cmd.Cmd):
                 else:
                     p.karma -= 1
         except IndexError:
-            last_action = "Try 'punish [punishment]'."
+            self.last_action = "Try 'punish [punishment]'."
     def complete_punish(self, text, line, begidx, endidx):
         if not text:
             c = p.punishments
@@ -304,12 +321,12 @@ class CmdShell(cmd.Cmd):
             for follower in followers:
                 followers[follower].happiness += p.karma / 10
         else:
-            last_action = "Your god(s) seem unhappy to your actions."
+            self.last_action = "Your god(s) seem unhappy to your actions."
     def help_pray(self):
         print("Pray your god(s) for help.")
     def do_stats(self, l):
         print("A young kingdom of", p.citadel)
-        print(resources, p.taxincome, "tax income")
+        print(self.resources(), p.taxincome, "tax income")
         # print(self.training_percent)
         happiness = 0
         crimes = {}
@@ -318,7 +335,7 @@ class CmdShell(cmd.Cmd):
             for hahmo in followers:
                 if profession.name == followers[hahmo].name:
                     a += 1
-            print(a, profession.name, "\t" + str(self.training_percent[profession.name]) + "%")
+            print(self.color_bold, a, self.color_reset, profession.name, "\t" + str(self.training_percent[profession.name]) + "%")
         for hahmo in followers:
             happiness += followers[hahmo].happiness
         try:
@@ -340,7 +357,7 @@ class CmdShell(cmd.Cmd):
                 nested=NestedShell()
                 nested.cmdloop()
             else:
-                last_action = "When the power of love overcomes the love of power the world will know peace. - Jimi Hendrix"
+                self.last_action = "When the power of love overcomes the love of power the world will know peace. - Jimi Hendrix"
         else:
             nested=NestedShell()
             nested.cmdloop()
