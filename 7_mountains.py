@@ -4,8 +4,9 @@
 import random
 import time
 import cmd
-import os
 import sys
+def clearScreen():
+    print("%c[2J" % (27) + "%c[;H" % (27))
 class Follower():
     def __init__(self, resources, followers):
         self.methods = [self.eat, self.seekshelter, self.sex_and_death, self.rotostele]
@@ -120,6 +121,7 @@ class Pelaaja:
         self.informations_index = 0
         self.informations = ["No information. Try training some scouts or pass few turns", "Scouts report: There are angry wildlings in nearby woods. You can start war against them by typing 'war'.", "Scouts report: There is an abandoned mine nearby. You can raid it by typing 'raid' (feature not available yet)"]
         self.punishments = ["jail", "hang", "behead", "scald", "pardon"]
+        self.karma = 0
 
     def bornAndDie(self):
         kuolema = []
@@ -162,18 +164,20 @@ class CmdShell(cmd.Cmd):
     training_percent = {}
     tutorial_index = 0
     tutorial = False
-    tutorial_list = [None, "First let's train some farmers by typing 'train farmer 25' -this will set the amount of farmers to be trained to 25%. Type 'tutorial' again to stop tutorial", "Next, let's set the training for the rest of the followers. Repeat the previous step but this time by typing 'train builder 25'.", "Next 'train merchant 25'. Once you're set, the values will remain the same until you change them -you don't have to do this every turn.", "And 'train soldier 25'.", "Good, now the training is set. Let's change the tax rate by typing 'tax'.", "The last thing we'll do in this tutorial is to hit tab-key twice. This will show all the commands we'll have. You can autocomplete sentences with tab by typing first few letters of a sentence and then hit tab. For example pa<tab> to autocomplete 'pass'", "Type 'help' for in-game help or 'help <command> to view help for a certain command (don't forget the tab-autocomplete!). TIP: train some scouts."]
+    tutorial_list = [None, None, "First let's hit <tab> key twice. This will bring out the list of available commands. Then, type 'pr' and hit <tab> to autocomplete 'pray'.", "Using the autocomplete method punch in a sentence 'train farmer 25' and hit <enter> -this will set the amount of farmers to be trained to 25%.", "As you can see, the game automatically compensates the training rate for rest of the professions. Good, now the training is set. Let's change the tax rate by typing 'tax'.", "Type 'help' for in-game help or 'help <command> to view help for a certain command (don't forget the tab-autocomplete!). Now type 'pass' to finish the turn"]
     last_action = ""
     informations_index = 0
 
     for profession in p.professions:
-        training_percent[profession.name] = 0
+        training_percent[profession.name] = 20
     def preloop(self):
-        os.system("clear")
+        clearScreen()
         self.do_stats("foo")
     def emptyline(self):
         self.do_pass("foo")
     def postcmd(self, stop, line):
+        if self.tutorial == True:
+            self.tutorial_index += 1
         if p.informations_index > self.informations_index:
             last_action = "Scouts have provided new information. Type 'scout' to view information."
         for profession in professions:
@@ -181,7 +185,7 @@ class CmdShell(cmd.Cmd):
                 p.followers[len(p.followers) + 1] = profession(resources, followers)
                 p.birthrate -= 1
         if line[0:4] != "help" and line[0:5] != "story":
-            os.system("clear")
+            clearScreen()
             self.do_stats("foo")
             print(self.last_action)
             if self.tutorial_index != 0:
@@ -221,8 +225,6 @@ class CmdShell(cmd.Cmd):
         if self.firstrun == True:
             print("Type 'help' to see the commands or 'story' to print the story so far.")
             self.firstrun = False
-        if self.tutorial == True:
-            self.tutorial_index += 1
         
     def complete_train(self, text, line, begidx, endidx):
         #print(p.profession_names)
@@ -258,8 +260,6 @@ class CmdShell(cmd.Cmd):
         else:
             p.tax = float(j)
         self.last_action = "You set the tax rate"
-        if self.tutorial == True:
-            self.tutorial_index += 1
     def help_tax(self):
         print("change taxation")
     def do_scout(self, s):
@@ -285,6 +285,12 @@ class CmdShell(cmd.Cmd):
                     followers[follower].happiness += 1
                 print(s[0] + "ing!")
                 time.sleep(1)
+                if s[0] == "pardon":
+                    p.karma += 1
+                if s[0] == "jail":
+                    pass
+                else:
+                    p.karma -= 1
         except IndexError:
             last_action = "Try 'punish [punishment]'."
     def complete_punish(self, text, line, begidx, endidx):
@@ -293,6 +299,14 @@ class CmdShell(cmd.Cmd):
         else:
             c = [i for i in p.punishments if i.startswith(text)]
         return c
+    def do_pray(self, s):
+        if p.karma > 1:
+            for follower in followers:
+                followers[follower].happiness += p.karma / 10
+        else:
+            last_action = "Your god(s) seem unhappy to your actions."
+    def help_pray(self):
+        print("Pray your god(s) for help.")
     def do_stats(self, l):
         print("A young kingdom of", p.citadel)
         print(resources, p.taxincome, "tax income")
@@ -342,7 +356,7 @@ class CmdShell(cmd.Cmd):
         print("Start in-game tutorial how to play the game.")
     def do_pass(self, l):
         time.sleep(1)
-        os.system("clear")
+        clearScreen()
         p.taxincome = p.collect_tax()
         p.bornAndDie()
         print(len(followers), "followers", resources, "tax income", p.taxincome)
@@ -354,8 +368,6 @@ class CmdShell(cmd.Cmd):
                     a += 1
             print(profession.name, a)
 #        self.last_action = "Passed."
-        if self.tutorial == True:
-            self.tutorial_index += 1
         if len(followers) < 1 and self.firstrun == False:
             self.last_action = "All the followers died. Game over!"
 
@@ -397,11 +409,11 @@ class NestedShell(cmd.Cmd):
 p.story = ["At the beginning You and your twin brother were born to the King of Seven Mountains.", "Then came the war that tore the kindom to the dust.", "Your twin brother chose his evil wife over you and your family. Both of you chose different paths with few loyal followers.", "You travelled to the East and found a good place to start a residence."]
 try:
     if sys.argv[1] == "skip":
-        os.system("clear")
+        clearScreen()
 except IndexError:
-    os.system("clear")
+    clearScreen()
     for line in p.story:
-        os.system("clear")
+        clearScreen()
         print(line)
         time.sleep(8)
 
